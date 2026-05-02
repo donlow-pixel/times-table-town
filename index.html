@@ -13,6 +13,7 @@
     --accent1:#FFD93D;--accent2:#6BCB77;--accent3:#4D96FF;--accent4:#FF6B6B;
     --star:#FFD93D;
   }
+  \\\this is just for illlustration purpose
   body{font-family:'Nunito',sans-serif;background:var(--sky);color:var(--text);min-height:100vh;overflow-x:hidden;}
   .app{max-width:680px;margin:0 auto;padding:1rem;}
   h1{font-family:'Fredoka One',cursive;font-size:2rem;text-align:center;color:#FF6B6B;letter-spacing:1px;margin-bottom:4px;}
@@ -168,7 +169,7 @@ function buildChant(){const cl=document.getElementById('chantList');cl.innerHTML
 function highlightChant(){for(let i=1;i<=12;i++){const el=document.getElementById('chant-'+i);if(!el)continue;if(i===currentIdx+1){el.style.background='#5c4a9e';el.style.color='#fff';}else if(i<currentIdx+1){el.style.background='#6BCB7733';el.style.color='#2a7a3a';}else{el.style.background='#f0ecff';el.style.color='#5c4a9e';}}}
 let flashInt=null;
 function startFlash(){if(flashInt)clearInterval(flashInt);revealAnswer();flashInt=setInterval(()=>{nextQuestion();},3000);}
-function setMode(m){mode=m;document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));const eq=document.getElementById('eqRow');const qz=document.getElementById('quizArea');const lc=document.getElementById('learnControls');const qc=document.getElementById('quizControls');if(flashInt){clearInterval(flashInt);flashInt=null;}if(m==='learn'){eq.style.display='flex';qz.style.display='none';lc.style.display='flex';qc.style.display='none';currentIdx=0;renderQuestion();}else if(m==='quiz'){eq.style.display='none';qz.style.display='block';lc.style.display='none';qc.style.display='flex';currentIdx=Math.floor(Math.random()*12);renderQuestion();}else if(m==='flash'){eq.style.display='flex';qz.style.display='none';lc.style.display='none';qc.style.display='none';currentIdx=0;renderQuestion();}}
+function setMode(m){mode=m;document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));const eq=document.getElementById('eqRow');const qz=document.getElementById('quizArea');const lc=document.getElementById('learnControls');const qc=document.getElementById('quizControls');const cb=document.getElementById('chantBox');if(flashInt){clearInterval(flashInt);flashInt=null;}if(m==='learn'){eq.style.display='flex';qz.style.display='none';lc.style.display='flex';qc.style.display='none';cb.style.display='block';currentIdx=0;renderQuestion();}else if(m==='quiz'){eq.style.display='none';qz.style.display='block';lc.style.display='none';qc.style.display='flex';cb.style.display='none';currentIdx=Math.floor(Math.random()*12);renderQuestion();}else if(m==='flash'){eq.style.display='flex';qz.style.display='none';lc.style.display='none';qc.style.display='none';cb.style.display='block';currentIdx=0;renderQuestion();}}
 speechSynthesis.onvoiceschanged=()=>{};
 buildTableGrid();updateMonsters();renderQuestion();buildChant();
 </script>
