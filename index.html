@@ -13,7 +13,6 @@
     --accent1:#FFD93D;--accent2:#6BCB77;--accent3:#4D96FF;--accent4:#FF6B6B;
     --star:#FFD93D;
   }
-  \\\this is just for illlustration purpose
   body{font-family:'Nunito',sans-serif;background:var(--sky);color:var(--text);min-height:100vh;overflow-x:hidden;}
   .app{max-width:680px;margin:0 auto;padding:1rem;}
   h1{font-family:'Fredoka One',cursive;font-size:2rem;text-align:center;color:#FF6B6B;letter-spacing:1px;margin-bottom:4px;}
@@ -66,6 +65,10 @@
   @keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
   .streak-badge{background:#FF6B6B;color:#fff;border-radius:20px;padding:3px 10px;font-size:.8rem;font-weight:800;display:none;}
   .streak-badge.show{display:inline-block;animation:pop .4s ease;}
+  .game-tabs{display:flex;gap:8px;margin-bottom:.8rem;}
+  .game-tab{flex:1;font-family:'Fredoka One',cursive;font-size:1.05rem;padding:.55rem;border-radius:14px;border:2.5px solid #e8dfff;cursor:pointer;text-align:center;background:#f8f6ff;color:var(--muted);transition:.15s;}
+  .game-tab:hover{transform:translateY(-1px);}
+  .game-tab.active{background:#FF6B6B;color:#fff;border-color:#cc3333;}
   .mode-tabs{display:flex;gap:6px;margin-bottom:.8rem;}
   .mode-tab{flex:1;font-family:'Fredoka One',cursive;font-size:.9rem;padding:.4rem;border-radius:12px;border:2px solid #e8dfff;cursor:pointer;text-align:center;background:#f8f6ff;color:var(--muted);transition:.15s;}
   .mode-tab.active{background:#5c4a9e;color:#fff;border-color:#3d2f7e;}
@@ -83,15 +86,19 @@
 </head>
 <body>
 <div class="app">
-  <h1>🔢 Times Table Town!</h1>
-  <p class="subtitle">Learn to multiply — it's super fun!</p>
+  <div class="game-tabs">
+    <div class="game-tab active" data-game="multiply" onclick="switchGame('multiply')">✖️ Times Tables</div>
+    <div class="game-tab" data-game="divide" onclick="switchGame('divide')">➗ Division Den</div>
+  </div>
+  <h1 id="gameTitle">🔢 Times Table Town!</h1>
+  <p class="subtitle" id="gameSubtitle">Learn to multiply — it's super fun!</p>
   <div class="score-bar">
     <div class="score-item"><span class="score-val" id="scoreVal">0</span><span>score</span></div>
     <div class="score-item"><span class="score-val" id="streakVal">0</span><span>streak</span></div>
     <div class="score-item"><span class="stars-display" id="starsDisplay">☆☆☆☆☆</span><span>stars</span></div>
     <div class="score-item"><span class="level-badge" id="levelBadge">Beginner</span></div>
   </div>
-  <p class="section-label">Pick a table:</p>
+  <p class="section-label" id="tableLabel">Pick a table:</p>
   <div class="table-grid" id="tableGrid"></div>
   <div class="mode-tabs">
     <div class="mode-tab active" data-mode="learn" onclick="setMode('learn')">📖 Learn</div>
@@ -110,7 +117,7 @@
     </div>
     <div class="equation-row" id="eqRow">
       <span class="num-box a" id="numA">2</span>
-      <span class="num-box op">×</span>
+      <span class="num-box op" id="eqOp">×</span>
       <span class="num-box b" id="numB">3</span>
       <span class="num-box eq">=</span>
       <span class="num-box ans hidden-ans" id="numAns" onclick="revealAnswer()">?</span>
@@ -118,7 +125,7 @@
     <div class="quiz-area" id="quizArea" style="display:none;">
       <div class="equation-row">
         <span class="num-box a" id="qNumA">2</span>
-        <span class="num-box op">×</span>
+        <span class="num-box op" id="qOp">×</span>
         <span class="num-box b" id="qNumB">3</span>
         <span class="num-box eq">=</span>
         <input class="quiz-input" id="quizInput" type="number" min="0" max="144" placeholder="?" onkeydown="quizKeydown(event)">
@@ -137,7 +144,7 @@
     <div class="complete-banner" id="completeBanner">🎉 Table Complete! Amazing job! 🎉</div>
   </div>
   <div id="chantBox" style="background:#fff;border-radius:16px;padding:.6rem 1rem;border:2px solid #e8dfff;margin-top:.3rem;">
-    <p class="section-label" style="margin-bottom:.3rem;">Full table chant:</p>
+    <p class="section-label" style="margin-bottom:.3rem;" id="chantLabel">Full table chant:</p>
     <div id="chantList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
   </div>
 </div>
@@ -147,17 +154,90 @@ const TABLES=[2,3,4,5,6,7,8,9,10];
 const MONSTERS=['🐉','🦄','🐸','🐼','🦊','🐨','🦁','🐯','🐮','🐧','🦉','🦋'];
 const LEVELS=[{name:'Beginner',min:0},{name:'Learner',min:50},{name:'Counter',min:120},{name:'Multiplier',min:250},{name:'Wizard',min:500},{name:'Master',min:1000}];
 const COLORS=['#FF6B6B','#4D96FF','#6BCB77','#FFD93D','#cc77ff','#ff9f43'];
-let currentTable=2,currentIdx=0,mode='learn',revealed=false,score=0,streak=0,stars=0,speaking=false,flashInterval=null;
+let currentTable=2,currentIdx=0,mode='learn',game='multiply',revealed=false,score=0,streak=0,stars=0,speaking=false,flashInterval=null;
+
 function buildTableGrid(){const g=document.getElementById('tableGrid');g.innerHTML='';TABLES.forEach(n=>{const b=document.createElement('button');b.className='tbl-btn'+(n===currentTable?' active':'');b.textContent=n;b.onclick=()=>selectTable(n);g.appendChild(b);});}
 function selectTable(n){currentTable=n;currentIdx=0;revealed=false;document.querySelectorAll('.tbl-btn').forEach((b,i)=>{b.classList.toggle('active',TABLES[i]===n);});updateMonsters();renderQuestion();buildChant();document.getElementById('completeBanner').classList.remove('show');}
-function renderQuestion(){const a=currentTable,b=currentIdx+1,ans=a*b;document.getElementById('numA').textContent=a;document.getElementById('numB').textContent=b;const ansEl=document.getElementById('numAns');ansEl.textContent='?';ansEl.className='num-box ans hidden-ans';revealed=false;document.getElementById('revealBtn').disabled=false;document.getElementById('qNumA').textContent=a;document.getElementById('qNumB').textContent=b;document.getElementById('quizInput').value='';document.getElementById('feedback').textContent='';document.getElementById('feedback').className='feedback';const pct=((currentIdx)/12)*100;document.getElementById('progFill').style.width=pct+'%';document.getElementById('progLabel').textContent=(currentIdx+1)+' / 12';highlightChant();if(mode==='flash')startFlash();}
-function revealAnswer(){if(revealed)return;revealed=true;const a=currentTable,b=currentIdx+1,ans=a*b;const el=document.getElementById('numAns');el.textContent=ans;el.className='num-box ans reveal';document.getElementById('revealBtn').disabled=true;bounceMonsters();sayAnswer(a,b,ans);}
-function sayEquation(){if(speaking)return;const a=currentTable,b=currentIdx+1,ans=a*b;speak(`${a} times ${b}`,()=>{if(revealed)setTimeout(()=>speak(`equals ${ans}`),300);});}
-function sayQuizEquation(){const a=currentTable,b=currentIdx+1;speak(`What is ${a} times ${b}?`);}
-function sayAnswer(a,b,ans){speak(`${a} times ${b} equals ${ans}`);}
+
+function getVals(){
+  const b=currentIdx+1;
+  if(game==='multiply')return{numA:currentTable,numB:b,ans:currentTable*b};
+  return{numA:currentTable*b,numB:currentTable,ans:b};
+}
+
+function renderQuestion(){
+  const{numA,numB}=getVals();
+  const op=game==='multiply'?'×':'÷';
+  document.getElementById('numA').textContent=numA;
+  document.getElementById('numB').textContent=numB;
+  document.getElementById('eqOp').textContent=op;
+  document.getElementById('qOp').textContent=op;
+  const ansEl=document.getElementById('numAns');ansEl.textContent='?';ansEl.className='num-box ans hidden-ans';revealed=false;
+  document.getElementById('revealBtn').disabled=false;
+  document.getElementById('qNumA').textContent=numA;
+  document.getElementById('qNumB').textContent=numB;
+  document.getElementById('quizInput').value='';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  const pct=((currentIdx)/12)*100;
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progLabel').textContent=(currentIdx+1)+' / 12';
+  highlightChant();if(mode==='flash')startFlash();
+}
+
+function revealAnswer(){
+  if(revealed)return;revealed=true;
+  const{numA,numB,ans}=getVals();
+  const el=document.getElementById('numAns');el.textContent=ans;el.className='num-box ans reveal';
+  document.getElementById('revealBtn').disabled=true;
+  bounceMonsters();
+  if(game==='multiply')speak(`${numA} times ${numB} equals ${ans}`);
+  else speak(`${numA} divided by ${numB} equals ${ans}`);
+}
+
+function sayEquation(){
+  if(speaking)return;
+  const{numA,numB,ans}=getVals();
+  if(game==='multiply')speak(`${numA} times ${numB}`,()=>{if(revealed)setTimeout(()=>speak(`equals ${ans}`),300);});
+  else speak(`${numA} divided by ${numB}`,()=>{if(revealed)setTimeout(()=>speak(`equals ${ans}`),300);});
+}
+
+function sayQuizEquation(){
+  const{numA,numB}=getVals();
+  if(game==='multiply')speak(`What is ${numA} times ${numB}?`);
+  else speak(`What is ${numA} divided by ${numB}?`);
+}
+
 function speak(text,cb){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();speaking=true;const u=new SpeechSynthesisUtterance(text);u.rate=0.85;u.pitch=1.2;u.volume=1;const voices=speechSynthesis.getVoices();const kid=voices.find(v=>v.name.toLowerCase().includes('samantha')||v.name.toLowerCase().includes('google uk')||v.name.toLowerCase().includes('karen'));if(kid)u.voice=kid;const speakAnim=document.getElementById('speakAnim');speakAnim.classList.remove('hidden');u.onend=()=>{speaking=false;speakAnim.classList.add('hidden');if(cb)cb();};u.onerror=()=>{speaking=false;speakAnim.classList.add('hidden');};speechSynthesis.speak(u);}
-function nextQuestion(){if(currentIdx<11){currentIdx++;renderQuestion();}else{document.getElementById('completeBanner').classList.add('show');addScore(20);launchConfetti(60);speak(`Amazing! You finished the ${currentTable} times table!`);setTimeout(()=>{currentIdx=0;renderQuestion();document.getElementById('completeBanner').classList.remove('show');},3000);}}
-function submitAnswer(){const val=parseInt(document.getElementById('quizInput').value);const a=currentTable,b=currentIdx+1,ans=a*b;const fb=document.getElementById('feedback');if(isNaN(val)){fb.textContent='Type a number!';fb.className='feedback wrong';return;}if(val===ans){fb.textContent='🎉 Correct! Well done!';fb.className='feedback correct';streak++;addScore(10+(streak>2?streak*2:0));bounceMonsters();launchConfetti(streak>2?40:15);speak(`Correct! ${a} times ${b} equals ${ans}!`);updateStreak();setTimeout(nextQuestion,1200);}else{fb.textContent='Not quite! Try again 💪';fb.className='feedback wrong';streak=0;updateStreak();const el=document.getElementById('quizInput');el.style.borderColor='#FF6B6B';setTimeout(()=>el.style.borderColor='',500);speak(`Hmm, not quite. Try again!`);}}
+
+function nextQuestion(){
+  if(currentIdx<11){currentIdx++;renderQuestion();}
+  else{
+    document.getElementById('completeBanner').classList.add('show');addScore(20);launchConfetti(60);
+    const msg=game==='multiply'?`Amazing! You finished the ${currentTable} times table!`:`Amazing! You finished dividing by ${currentTable}!`;
+    speak(msg);
+    setTimeout(()=>{currentIdx=0;renderQuestion();document.getElementById('completeBanner').classList.remove('show');},3000);
+  }
+}
+
+function submitAnswer(){
+  const val=parseInt(document.getElementById('quizInput').value);
+  const{numA,numB,ans}=getVals();
+  const fb=document.getElementById('feedback');
+  if(isNaN(val)){fb.textContent='Type a number!';fb.className='feedback wrong';return;}
+  if(val===ans){
+    fb.textContent='🎉 Correct! Well done!';fb.className='feedback correct';
+    streak++;addScore(10+(streak>2?streak*2:0));bounceMonsters();launchConfetti(streak>2?40:15);
+    if(game==='multiply')speak(`Correct! ${numA} times ${numB} equals ${ans}!`);
+    else speak(`Correct! ${numA} divided by ${numB} equals ${ans}!`);
+    updateStreak();setTimeout(nextQuestion,1200);
+  }else{
+    fb.textContent='Not quite! Try again 💪';fb.className='feedback wrong';streak=0;updateStreak();
+    const el=document.getElementById('quizInput');el.style.borderColor='#FF6B6B';setTimeout(()=>el.style.borderColor='',500);
+    speak(`Hmm, not quite. Try again!`);
+  }
+}
+
 function quizKeydown(e){if(e.key==='Enter')submitAnswer();}
 function addScore(n){score+=n;stars=Math.floor(score/20);document.getElementById('scoreVal').textContent=score;document.getElementById('starsDisplay').textContent=renderStars(Math.min(stars,10));const lv=LEVELS.filter(l=>score>=l.min).pop();document.getElementById('levelBadge').textContent=lv.name;}
 function renderStars(n){let s='';for(let i=0;i<Math.min(n,5);i++)s+='⭐';for(let i=n;i<5;i++)s+='☆';return s;}
@@ -165,11 +245,49 @@ function updateStreak(){document.getElementById('streakVal').textContent=streak;
 function bounceMonsters(){['m1','m2'].forEach(id=>{const el=document.getElementById(id);el.classList.remove('bounce');void el.offsetWidth;el.classList.add('bounce');});}
 function updateMonsters(){const m1=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];let m2=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];document.getElementById('m1').textContent=m1;document.getElementById('m2').textContent=m2;}
 function launchConfetti(count){const wrap=document.getElementById('confettiWrap');for(let i=0;i<count;i++){const c=document.createElement('div');c.className='conf';c.style.left=Math.random()*100+'vw';c.style.top='-20px';c.style.background=COLORS[Math.floor(Math.random()*COLORS.length)];c.style.animationDuration=(1.5+Math.random()*2)+'s';c.style.animationDelay=(Math.random()*.5)+'s';c.style.transform=`rotate(${Math.random()*360}deg)`;wrap.appendChild(c);setTimeout(()=>c.remove(),3500);}}
-function buildChant(){const cl=document.getElementById('chantList');cl.innerHTML='';for(let i=1;i<=12;i++){const chip=document.createElement('div');chip.id='chant-'+i;chip.style.cssText=`font-family:'Nunito',sans-serif;font-size:.78rem;background:#f0ecff;color:#5c4a9e;padding:4px 8px;border-radius:10px;cursor:pointer;transition:.2s;`;chip.textContent=`${currentTable}×${i}=${currentTable*i}`;chip.onclick=()=>{speak(`${currentTable} times ${i} equals ${currentTable*i}`);};cl.appendChild(chip);}}
+
+function buildChant(){
+  const cl=document.getElementById('chantList');cl.innerHTML='';
+  for(let i=1;i<=12;i++){
+    const chip=document.createElement('div');chip.id='chant-'+i;
+    chip.style.cssText=`font-family:'Nunito',sans-serif;font-size:.78rem;background:#f0ecff;color:#5c4a9e;padding:4px 8px;border-radius:10px;cursor:pointer;transition:.2s;`;
+    if(game==='multiply'){
+      chip.textContent=`${currentTable}×${i}=${currentTable*i}`;
+      chip.onclick=()=>{speak(`${currentTable} times ${i} equals ${currentTable*i}`);};
+    }else{
+      chip.textContent=`${currentTable*i}÷${currentTable}=${i}`;
+      chip.onclick=()=>{speak(`${currentTable*i} divided by ${currentTable} equals ${i}`);};
+    }
+    cl.appendChild(chip);
+  }
+}
+
 function highlightChant(){for(let i=1;i<=12;i++){const el=document.getElementById('chant-'+i);if(!el)continue;if(i===currentIdx+1){el.style.background='#5c4a9e';el.style.color='#fff';}else if(i<currentIdx+1){el.style.background='#6BCB7733';el.style.color='#2a7a3a';}else{el.style.background='#f0ecff';el.style.color='#5c4a9e';}}}
+
 let flashInt=null;
 function startFlash(){if(flashInt)clearInterval(flashInt);revealAnswer();flashInt=setInterval(()=>{nextQuestion();},3000);}
+
 function setMode(m){mode=m;document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));const eq=document.getElementById('eqRow');const qz=document.getElementById('quizArea');const lc=document.getElementById('learnControls');const qc=document.getElementById('quizControls');const cb=document.getElementById('chantBox');if(flashInt){clearInterval(flashInt);flashInt=null;}if(m==='learn'){eq.style.display='flex';qz.style.display='none';lc.style.display='flex';qc.style.display='none';cb.style.display='block';currentIdx=0;renderQuestion();}else if(m==='quiz'){eq.style.display='none';qz.style.display='block';lc.style.display='none';qc.style.display='flex';cb.style.display='none';currentIdx=Math.floor(Math.random()*12);renderQuestion();}else if(m==='flash'){eq.style.display='flex';qz.style.display='none';lc.style.display='none';qc.style.display='none';cb.style.display='block';currentIdx=0;renderQuestion();}}
+
+function switchGame(g){
+  game=g;
+  document.querySelectorAll('.game-tab').forEach(t=>t.classList.toggle('active',t.dataset.game===g));
+  if(g==='multiply'){
+    document.getElementById('gameTitle').textContent='🔢 Times Table Town!';
+    document.getElementById('gameSubtitle').textContent='Learn to multiply — it\'s super fun!';
+    document.getElementById('tableLabel').textContent='Pick a table:';
+    document.getElementById('chantLabel').textContent='Full table chant:';
+  }else{
+    document.getElementById('gameTitle').textContent='➗ Division Den!';
+    document.getElementById('gameSubtitle').textContent='Master division — you\'ve got this!';
+    document.getElementById('tableLabel').textContent='Pick a divisor:';
+    document.getElementById('chantLabel').textContent='Full division chant:';
+  }
+  currentIdx=0;revealed=false;
+  if(flashInt){clearInterval(flashInt);flashInt=null;}
+  setMode('learn');buildChant();
+}
+
 speechSynthesis.onvoiceschanged=()=>{};
 buildTableGrid();updateMonsters();renderQuestion();buildChant();
 </script>
